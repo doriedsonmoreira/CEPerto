@@ -1,10 +1,4 @@
-function cleanText(text: string): string {
-    return text
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .trim();
-}
+import { cleanText } from "./normalize";
 
 export function isNumberInComplement(complemento: string, userNumber: number): boolean {
     if (!complemento || isNaN(userNumber)) return false;
