@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import { searchAddress } from './services/viaCep'
+import { reverseGeocode } from './services/geocoding'
 import type { ProcessedCepResult } from './types/address'
 
 type UiState = 'idle' | 'loading' | 'success' | 'empty' | 'error'
 
 export default function App() {
-
   const [uf, setUf] = useState('CE')
   const [city, setCity] = useState('Fortaleza')
   const [street, setStreet] = useState('')
   const [number, setNumber] = useState('')
 
   const [status, setStatus] = useState<UiState>('idle')
+  const [isLocating, setIsLocating] = useState(false)
+  const [locationMessage, setLocationMessage] = useState<string | null>(null)
   const [results, setResults] = useState<ProcessedCepResult[]>([])
   const [copiedCep, setCopiedCep] = useState<string | null>(null)
 
@@ -19,6 +21,7 @@ export default function App() {
     e.preventDefault()
     if (!street.trim() || !city.trim() || uf.length !== 2) return
 
+    setLocationMessage(null)
     setStatus('loading')
     setResults([])
 
@@ -42,6 +45,74 @@ export default function App() {
     }
   }
 
+  function handleUseLocation() {
+    setLocationMessage(null)
+
+    if (!('geolocation' in navigator)) {
+      setLocationMessage('Seu navegador não possui suporte a geolocalização.')
+      return
+    }
+
+    setIsLocating(true)
+    setStatus('idle')
+
+    navigator.geolocation.getCurrentPosition(
+      async position => {
+        const { latitude, longitude } = position.coords
+
+        try {
+          const geo = await reverseGeocode(latitude, longitude)
+
+          if (!geo) {
+            setLocationMessage('Não foi possível identificar o nome da rua pela sua localização. Preencha os campos abaixo.')
+            setIsLocating(false)
+            return
+          }
+
+          setUf(geo.uf)
+          setCity(geo.city)
+          setStreet(geo.street)
+          setNumber('')
+          setIsLocating(false)
+
+          setStatus('loading')
+          setResults([])
+          const data = await searchAddress({
+            uf: geo.uf,
+            city: geo.city,
+            street: geo.street,
+          })
+
+          if (data.length === 0) {
+            setStatus('empty')
+          } else {
+            setResults(data)
+            setStatus('success')
+          }
+        } catch (err) {
+          console.error(err)
+          setLocationMessage('Erro ao consultar dados da sua localização.')
+          setIsLocating(false)
+        }
+      },
+      error => {
+        setIsLocating(false)
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationMessage('Permissão de localização negada. Sem problemas! Você pode preencher os campos abaixo.')
+        } else if (error.code === error.TIMEOUT) {
+          setLocationMessage('O sinal do GPS demorou a responder. Tente preencher os campos abaixo.')
+        } else {
+          setLocationMessage('Não foi possível obter sua localização no momento.')
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000,
+      }
+    )
+  }
+
   function handleCopy(cep: string) {
     navigator.clipboard.writeText(cep)
     setCopiedCep(cep)
@@ -51,7 +122,6 @@ export default function App() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 py-12 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto space-y-8">
-
         <header className="text-center space-y-2">
           <h1 className="text-4xl font-extrabold tracking-tight text-blue-600">
             CEPerto 📍
@@ -60,6 +130,38 @@ export default function App() {
             Descubra o CEP de forma rápida, simples e sem burocracia.
           </p>
         </header>
+
+        <div className="space-y-3">
+          <button
+            type="button"
+            onClick={handleUseLocation}
+            disabled={isLocating || status === 'loading'}
+            className="w-full py-4 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold
+                rounded-2xl transition shadow-sm hover:shadow flex items-center justify-center gap-3
+                disabled:opacity-50 cursor-pointer text-base"
+          >
+            <span className="text-xl">📍</span>
+            <span>
+              {isLocating ? 'Consultando GPS e descobrindo a rua...' : 'Usar minha localização atual'}
+            </span>
+          </button>
+
+          {locationMessage && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-sm flex
+                items-start gap-2">
+              <span>ℹ</span>
+              <p>{locationMessage}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="relative flex items-center justify-center">
+          <div className="border-t border-slate-200 w-full"></div>
+          <span className="bg-slate-50 px-3 text-xs font-semibold text-slate-400 uppercase
+              tracking-wider">
+            ou busque preenchendo os campos
+          </span>
+        </div>
 
         <form onSubmit={handleSearch} className="bg-white p-6 rounded-2xl shadow-sm border
             border-slate-200 space-y-4">
@@ -129,7 +231,7 @@ export default function App() {
 
           <button
             type="submit"
-            disabled={status === 'loading'}
+            disabled={status === 'loading' || isLocating}
             className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl
                 transition shadow-sm hover:shadow disabled:opacity-50 cursor-pointer"
           >
@@ -212,4 +314,4 @@ export default function App() {
       </div>
     </main>
   )
-}
+}  
