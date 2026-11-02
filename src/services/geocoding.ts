@@ -1,5 +1,5 @@
 export interface ReverseGeocodeResult {
-    street: string
+    street?: string
     city: string
     uf: string
     neighborhood?: string
@@ -18,7 +18,6 @@ export async function reverseGeocode(lat: number, lon: number): Promise<ReverseG
         if (!address) return null
 
         const street = address.road || address.pedestrian || address.street || ''
-
         const city = address.city || address.town || address.village || address.municipality || ''
 
         let uf = ''
@@ -27,12 +26,12 @@ export async function reverseGeocode(lat: number, lon: number): Promise<ReverseG
             uf = isoState.replace('BR-', '')
         }
 
-        if (!street || !city || !uf) {
+        if (!city || !uf) {
             return null
         }
 
         return {
-            street,
+            street: street || undefined,
             city,
             uf,
             neighborhood: address.suburb || address.neighbourhood || '',
@@ -41,4 +40,4 @@ export async function reverseGeocode(lat: number, lon: number): Promise<ReverseG
         console.error('Erro na geocodificação reversa:', error)
         return null
     }
-}  
+}

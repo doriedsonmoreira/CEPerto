@@ -71,23 +71,32 @@ export default function App() {
 
           setUf(geo.uf)
           setCity(geo.city)
-          setStreet(geo.street)
           setNumber('')
           setIsLocating(false)
 
-          setStatus('loading')
-          setResults([])
-          const data = await searchAddress({
-            uf: geo.uf,
-            city: geo.city,
-            street: geo.street,
-          })
+          if (geo.street) {
+            setStreet(geo.street)
+            setIsLocating(false)
 
-          if (data.length === 0) {
-            setStatus('empty')
+
+            setStatus('loading')
+            setResults([])
+            const data = await searchAddress({
+              uf: geo.uf,
+              city: geo.city,
+              street: geo.street,
+            })
+
+            if (data.length === 0) {
+              setStatus('empty')
+            } else {
+              setResults(data)
+              setStatus('success')
+            }
           } else {
-            setResults(data)
-            setStatus('success')
+            setStreet('')
+            setIsLocating(false)
+            setLocationMessage(`Localizamos sua cidade: ${geo.city}/${geo.uf}. Por favor, digite apenas a sua rua abaixo.`)
           }
         } catch (err) {
           console.error(err)
