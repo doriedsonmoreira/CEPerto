@@ -3,6 +3,9 @@
 .env.*
 !.env.example
 
+# Memória local do projeto (não sobe para o GitHub)
+MEMORIA.md
+
 # Vercel
 .vercel
 
