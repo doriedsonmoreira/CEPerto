@@ -50,7 +50,19 @@ function checkRateLimit(ip: string): string | null {
     return null
 }
 
-export default async function handler(req: Request): Promise<Response> {
+interface VercelNodeRequest {
+    method?: string
+    headers?: Record<string, string | string[] | undefined>
+    body?: unknown
+}
+
+interface VercelNodeResponse {
+    statusCode: number
+    setHeader: (name: string, value: string) => void
+    end: (body: string) => void
+}
+
+async function handleWebRequest(req: Request): Promise<Response> {
     if (req.method !== 'POST') {
         return new Response(JSON.stringify({ error: 'Método não permitido' }), {
             status: 405,
@@ -210,4 +222,49 @@ export default async function handler(req: Request): Promise<Response> {
             headers: { 'Content-Type': 'application/json' },
         })
     }
+}
+
+// Compatível tanto com Web Request/Response (Vite local / Edge) quanto com Node (req, res) da Vercel
+export default async function handler(
+    req: Request | VercelNodeRequest,
+    res?: VercelNodeResponse
+): Promise<Response | void> {
+    if (typeof (req as Request).json === 'function' && !res) {
+        return handleWebRequest(req as Request)
+    }
+
+    const nodeReq = req as VercelNodeRequest
+    const headers = new Headers()
+    if (nodeReq.headers) {
+        for (const [key, value] of Object.entries(nodeReq.headers)) {
+            if (typeof value === 'string') headers.set(key, value)
+            else if (Array.isArray(value)) headers.set(key, value.join(', '))
+        }
+    }
+
+    const bodyStr =
+        typeof nodeReq.body === 'string'
+            ? nodeReq.body
+            : JSON.stringify(nodeReq.body ?? {})
+
+    const webReq = new Request('http://localhost/api/parse-address', {
+        method: nodeReq.method || 'POST',
+        headers,
+        body: nodeReq.method === 'POST' ? bodyStr : undefined,
+    })
+
+    const webRes = await handleWebRequest(webReq)
+    const responseText = await webRes.text()
+
+    if (res) {
+        res.statusCode = webRes.status
+        res.setHeader('Content-Type', 'application/json')
+        res.end(responseText)
+        return
+    }
+
+    return new Response(responseText, {
+        status: webRes.status,
+        headers: { 'Content-Type': 'application/json' },
+    })
 }
