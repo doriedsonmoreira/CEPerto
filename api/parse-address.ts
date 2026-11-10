@@ -45,9 +45,10 @@ export default async function handler(req: Request): Promise<Response> {
         // A ordem pode ser ajustada via env GEMINI_MODELS="a,b,c".
         // gemini-3.8-flash foi removido: modelo novo, com pico recorrente no gratuito.
         const MODELS_FALLBACK = [
-            'gemini-1.5-flash',
-            'gemini-2.5-flash',
-            'gemini-2.5-flash-lite',
+            'gemini-3.5-flash-lite',
+            'gemini-3.5-flash',
+            'gemini-3.7-flash',
+            'gemini-3.8-flash',
         ]
         const models = process.env.GEMINI_MODELS
             ? process.env.GEMINI_MODELS.split(',').map(m => m.trim()).filter(Boolean)
@@ -58,8 +59,9 @@ export default async function handler(req: Request): Promise<Response> {
             const code = (error as { code?: number })?.code
             const message = String((error as { message?: string })?.message ?? '')
             return (
-                status === 503 || status === 429 || status === 500 || status === 502 || status === 504 ||
-                code === 503 || code === 429 ||
+                status === 404 || status === 503 || status === 429 || status === 500 || status === 502 || status === 504 ||
+                code === 404 || code === 503 || code === 429 ||
+                message.includes('NOT_FOUND') ||
                 message.includes('UNAVAILABLE') ||
                 message.includes('RESOURCE_EXHAUSTED') ||
                 message.includes('high demand') ||
