@@ -1,7 +1,8 @@
 
 import type { ViaCepResult, ProcessedCepResult } from '../types/address'
 import { isNumberInComplement } from '../domain/complement'
-import { extractSearchWords, rankResultsBySimilarity } from '../domain/cascadeSearch'
+import { extractSearchWords, rankResultsBySimilarity, isRuralSearch } from '../domain/cascadeSearch'
+import { searchRuralAddress } from './ruralCep'
 
 export interface SearchAddressParams {
     uf: string
@@ -40,17 +41,35 @@ export async function fetchViaCep(uf: string, city: string, street: string): Pro
 export async function searchAddress(params: SearchAddressParams): Promise<ProcessedCepResult[]> {
     const { uf, city, street, number } = params
 
-    let rawResults = await fetchViaCep(uf, city, street)
+    let rawResults: ViaCepResult[] = []
 
+    // Pré-filtro Rural: se o usuário incluiu termos como "sítio", "povoado", "comunidade", etc.,
+    // consulta primeiro a base rural do projeto e combina com o ViaCEP se houver homônimo urbano.
+    if (isRuralSearch(street)) {
+        const ruralResults = await searchRuralAddress(uf, city, street)
+        const urbanExactResults = await fetchViaCep(uf, city, street)
+        rawResults = [...ruralResults, ...urbanExactResults]
+    }
+
+    // Busca Urbana Padrão (ou fallback caso o pré-filtro rural não tenha retornado nada)
     if (rawResults.length === 0) {
-        const candidateWords = extractSearchWords(street)
+        rawResults = await fetchViaCep(uf, city, street)
 
-        for (const word of candidateWords) {
-            const cascadeResults = await fetchViaCep(uf, city, word)
-            if (cascadeResults.length > 0) {
-                rawResults = rankResultsBySimilarity(cascadeResults, street)
-                break
+        if (rawResults.length === 0) {
+            const candidateWords = extractSearchWords(street)
+
+            for (const word of candidateWords) {
+                const cascadeResults = await fetchViaCep(uf, city, word)
+                if (cascadeResults.length > 0) {
+                    rawResults = rankResultsBySimilarity(cascadeResults, street)
+                    break
+                }
             }
+        }
+
+        // Último fallback: se mesmo após a cascata o ViaCEP retornou vazio, tenta na base rural
+        if (rawResults.length === 0) {
+            rawResults = await searchRuralAddress(uf, city, street)
         }
     }
 

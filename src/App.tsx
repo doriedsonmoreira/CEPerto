@@ -308,7 +308,7 @@ export default function App() {
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                Rua / Logradouro
+                Rua / Logradouro / Localidade Rural
               </label>
               <input
                 type="text"
@@ -316,7 +316,7 @@ export default function App() {
                 onChange={e => setStreet(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2
                     focus:ring-blue-500 focus:outline-none"
-                placeholder="Ex: Beira Mar"
+                placeholder="Ex: Beira Mar ou Sítio Areias de Cima"
                 required
               />
             </div>
@@ -335,6 +335,12 @@ export default function App() {
               />
             </div>
           </div>
+
+          <p className="text-xs text-slate-500">
+            🌾 <strong className="font-semibold text-slate-600">Zona Rural:</strong> no campo de logradouro acima,
+            inclua termos como <em>Sítio, Povoado, Comunidade, Fazenda ou Distrito</em> antes do nome da localidade
+            (ex: <em>&quot;Sítio Areias de Cima&quot;</em>).
+          </p>
 
           <button
             type="submit"

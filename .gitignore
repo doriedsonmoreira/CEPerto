@@ -3,8 +3,10 @@
 .env.*
 !.env.example
 
-# Memória local do projeto (não sobe para o GitHub)
+# Memória local do projeto e configurações de agentes (não sobem para o GitHub)
 MEMORIA.md
+AGENTS.md
+.agents/
 
 # Vercel
 .vercel
