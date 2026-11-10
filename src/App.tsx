@@ -308,7 +308,7 @@ export default function App() {
             onChange={e => setFreeText(e.target.value)}
             placeholder="Av Beira Mar 1200 Fortaleza CE"
             disabled={isAiSearching || status === 'loading'}
-            className="w-full sm:flex-1 h-[53px] sm:h-[56px] px-4 sm:px-[18px] bg-white border-[1.5px] border-[#0F1F44] font-mono text-[14px] sm:text-[16px] text-black placeholder:text-black/50 focus:outline-none focus:ring-2 focus:ring-[#3F6EB0] disabled:opacity-60"
+            className="w-full sm:flex-1 h-[53px] sm:h-[56px] px-4 sm:px-[18px] bg-white border-[1.5px] border-[#0F1F44] font-mono text-[16px] text-black placeholder:text-black/50 focus:outline-none focus:ring-2 focus:ring-[#3F6EB0] disabled:opacity-60"
           />
           <button
             type="submit"
@@ -422,7 +422,7 @@ export default function App() {
                   onChange={e => setUf(e.target.value.toUpperCase())}
                   placeholder="UF"
                   required
-                  className="w-full h-[49px] sm:h-[51px] px-4 bg-white border-[1.5px] border-[#0F1F44] font-mono text-[14px] sm:text-[15px] text-black focus:outline-none focus:ring-2 focus:ring-[#3F6EB0]"
+                  className="w-full h-[49px] sm:h-[51px] px-4 bg-white border-[1.5px] border-[#0F1F44] font-mono text-[16px] sm:text-[15px] text-black focus:outline-none focus:ring-2 focus:ring-[#3F6EB0]"
                 />
               </div>
 
@@ -440,7 +440,7 @@ export default function App() {
                   onChange={e => setCity(e.target.value)}
                   placeholder="Fortaleza"
                   required
-                  className="w-full h-[49px] sm:h-[51px] px-4 bg-white border-[1.5px] border-[#0F1F44] font-mono text-[14px] sm:text-[15px] text-black focus:outline-none focus:ring-2 focus:ring-[#3F6EB0]"
+                  className="w-full h-[49px] sm:h-[51px] px-4 bg-white border-[1.5px] border-[#0F1F44] font-mono text-[16px] sm:text-[15px] text-black focus:outline-none focus:ring-2 focus:ring-[#3F6EB0]"
                 />
               </div>
             </div>
@@ -461,7 +461,7 @@ export default function App() {
                   onChange={e => setStreet(e.target.value)}
                   placeholder="Ex: Beira Mar ou Sítio Areias de Cima"
                   required
-                  className="w-full h-[49px] sm:h-[51px] px-4 bg-white border-[1.5px] border-[#0F1F44] font-mono text-[14px] sm:text-[15px] text-black placeholder:text-black/50 focus:outline-none focus:ring-2 focus:ring-[#3F6EB0]"
+                  className="w-full h-[49px] sm:h-[51px] px-4 bg-white border-[1.5px] border-[#0F1F44] font-mono text-[16px] sm:text-[15px] text-black placeholder:text-black/50 focus:outline-none focus:ring-2 focus:ring-[#3F6EB0]"
                 />
               </div>
 
@@ -478,7 +478,7 @@ export default function App() {
                   value={number}
                   onChange={e => setNumber(e.target.value)}
                   placeholder="Ex: 1200"
-                  className="w-full h-[49px] sm:h-[51px] px-4 bg-white border-[1.5px] border-[#0F1F44] font-mono text-[14px] sm:text-[15px] text-black placeholder:text-black/50 focus:outline-none focus:ring-2 focus:ring-[#3F6EB0]"
+                  className="w-full h-[49px] sm:h-[51px] px-4 bg-white border-[1.5px] border-[#0F1F44] font-mono text-[16px] sm:text-[15px] text-black placeholder:text-black/50 focus:outline-none focus:ring-2 focus:ring-[#3F6EB0]"
                 />
               </div>
             </div>
