@@ -57,3 +57,36 @@ export function rankResultsBySimilarity(results: ViaCepResult[], queryStreet: st
         return simB - simA
     })
 }
+
+const RURAL_KEYWORDS = new Set([
+    'sitio',
+    'povoado',
+    'comunidade',
+    'fazenda',
+    'distrito',
+    'chacara',
+    'assentamento',
+    'agrovila',
+    'corrego',
+    'gleba',
+    'colonia',
+    'serra',
+    'rural',
+    'localidade',
+])
+
+export function isRuralSearch(query: string): boolean {
+    const words = cleanText(query).split(/\s+/).filter(Boolean)
+    return words.some(word => RURAL_KEYWORDS.has(word))
+}
+
+export function extractRuralTargetName(query: string): string {
+    const words = cleanText(query).split(/\s+/).filter(Boolean)
+    const filtered = words.filter(word => word !== 'zona' && !RURAL_KEYWORDS.has(word))
+
+    while (filtered.length > 0 && ['de', 'da', 'do', 'das', 'dos'].includes(filtered[0])) {
+        filtered.shift()
+    }
+
+    return filtered.length > 0 ? filtered.join(' ') : cleanText(query)
+}

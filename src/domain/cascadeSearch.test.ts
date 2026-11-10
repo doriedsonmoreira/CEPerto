@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { extractSearchWords, calculateSimilarity, rankResultsBySimilarity } from './cascadeSearch'
+import {
+    extractSearchWords,
+    calculateSimilarity,
+    rankResultsBySimilarity,
+    isRuralSearch,
+    extractRuralTargetName,
+} from './cascadeSearch'
 import type { ViaCepResult } from '../types/address'
 
 describe('cascadeSearch (Regra R9 - Tolerância a erros)', () => {
@@ -54,6 +60,25 @@ describe('cascadeSearch (Regra R9 - Tolerância a erros)', () => {
 
 
             expect(ranked[0].logradouro).toBe('Avenida Beira Mar')
+        })
+    })
+
+    describe('isRuralSearch e extractRuralTargetName (Pré-filtro Rural)', () => {
+        it('deve detectar termos rurais independente de acento ou maiúsculas', () => {
+            expect(isRuralSearch('Sítio Areias de Cima')).toBe(true)
+            expect(isRuralSearch('Povoado da Marambaia')).toBe(true)
+            expect(isRuralSearch('Avenida Beira Mar')).toBe(false)
+        })
+
+        it('não deve gerar falso positivo quando o termo é apenas substring de outra palavra', () => {
+            expect(isRuralSearch('Rua Serra Dourada')).toBe(true)
+            expect(isRuralSearch('Avenida Serrana')).toBe(false)
+        })
+
+        it('deve extrair apenas o nome-alvo removendo o prefixo rural e preposições iniciais', () => {
+            expect(extractRuralTargetName('Sítio Areias de Cima')).toBe('areias de cima')
+            expect(extractRuralTargetName('Povoado da Marambaia')).toBe('marambaia')
+            expect(extractRuralTargetName('Zona Rural Barra do Feijão')).toBe('barra do feijao')
         })
     })
 })
