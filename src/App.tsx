@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { searchAddress } from './services/viaCep'
+import { searchAddress, ViaCepRateLimitError } from './services/viaCep'
 import { reverseGeocode } from './services/geocoding'
 import { parseAddressWithAi } from './services/aiParser'
 import type { ProcessedCepResult } from './types/address'
@@ -77,6 +77,11 @@ export default function App() {
         setStatus('success')
       }
     } catch (err) {
+      if (err instanceof ViaCepRateLimitError) {
+        setStatus('idle')
+        setInfoMessage(err.message)
+        return
+      }
       console.error(err)
       setStatus('error')
     } finally {
@@ -181,6 +186,11 @@ export default function App() {
         setStatus('success')
       }
     } catch (err) {
+      if (err instanceof ViaCepRateLimitError) {
+        setStatus('idle')
+        setInfoMessage(err.message)
+        return
+      }
       console.error(err)
       setStatus('error')
     }
