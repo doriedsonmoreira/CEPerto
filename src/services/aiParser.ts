@@ -4,6 +4,7 @@ export interface ParsedAddress {
     bairro?: string
     cidade?: string
     uf?: string
+    errorMessage?: string
 }
 
 export async function parseAddressWithAi(text: string): Promise<ParsedAddress | null> {
@@ -23,6 +24,14 @@ export async function parseAddressWithAi(text: string): Promise<ParsedAddress | 
         })
 
         clearTimeout(timeoutId)
+
+        if (response.status === 429) {
+            const errData = await response.json().catch(() => ({}))
+            return {
+                logradouro: '',
+                errorMessage: errData.error || 'Limite de buscas com IA atingido. Use os campos manuais abaixo!',
+            }
+        }
 
         if (!response.ok) return null
 

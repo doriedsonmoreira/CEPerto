@@ -1,5 +1,55 @@
 import { GoogleGenAI, Type } from '@google/genai'
 
+const MAX_TEXT_LENGTH = 150
+const LIMIT_PER_MINUTE = 2
+const LIMIT_PER_HOUR = 4
+const LIMIT_PER_DAY = 6
+
+const ONE_MINUTE_MS = 60 * 1000
+const ONE_HOUR_MS = 60 * 60 * 1000
+const ONE_DAY_MS = 24 * 60 * 60 * 1000
+
+// Mantém os contadores por IP e o cache em globalThis para persistir entre chamadas
+const globalStore = globalThis as unknown as {
+    __cepertoIpHits?: Map<string, number[]>
+    __cepertoAiCache?: Map<string, Record<string, unknown>>
+}
+
+const ipHits = globalStore.__cepertoIpHits ?? (globalStore.__cepertoIpHits = new Map<string, number[]>())
+const aiCache = globalStore.__cepertoAiCache ?? (globalStore.__cepertoAiCache = new Map<string, Record<string, unknown>>())
+
+function getClientIp(req: Request): string {
+    const forwarded = req.headers.get('x-forwarded-for')
+    if (forwarded) {
+        return forwarded.split(',')[0].trim()
+    }
+    return req.headers.get('x-real-ip') || 'local-client'
+}
+
+function checkRateLimit(ip: string): string | null {
+    const now = Date.now()
+    const previousHits = ipHits.get(ip) || []
+
+    // Mantém apenas os registros das últimas 24 horas
+    const hitsLastDay = previousHits.filter(timestamp => now - timestamp < ONE_DAY_MS)
+    const hitsLastHour = hitsLastDay.filter(timestamp => now - timestamp < ONE_HOUR_MS)
+    const hitsLastMinute = hitsLastHour.filter(timestamp => now - timestamp < ONE_MINUTE_MS)
+
+    if (hitsLastDay.length >= LIMIT_PER_DAY) {
+        return 'Limite diário de 6 buscas com IA atingido. Utilize os campos manuais abaixo (uso ilimitado)!'
+    }
+    if (hitsLastHour.length >= LIMIT_PER_HOUR) {
+        return 'Limite de 4 buscas por hora com IA atingido. Utilize os campos manuais abaixo (uso ilimitado)!'
+    }
+    if (hitsLastMinute.length >= LIMIT_PER_MINUTE) {
+        return 'Limite de 2 buscas por minuto com IA atingido. Aguarde 1 minuto ou use os campos manuais abaixo!'
+    }
+
+    hitsLastDay.push(now)
+    ipHits.set(ip, hitsLastDay)
+    return null
+}
+
 export default async function handler(req: Request): Promise<Response> {
     if (req.method !== 'POST') {
         return new Response(JSON.stringify({ error: 'Método não permitido' }), {
@@ -10,13 +60,46 @@ export default async function handler(req: Request): Promise<Response> {
 
     try {
         const body = await req.json()
-        const text = body?.text
+        const rawText = body?.text
 
-        if (!text || typeof text !== 'string') {
+        if (!rawText || typeof rawText !== 'string' || !rawText.trim()) {
             return new Response(JSON.stringify({ error: 'Texto não fornecido' }), {
                 status: 400,
                 headers: { 'Content-Type': 'application/json' },
             })
+        }
+
+        const text = rawText.trim()
+
+        if (text.length > MAX_TEXT_LENGTH) {
+            return new Response(
+                JSON.stringify({ error: `O endereço deve ter no máximo ${MAX_TEXT_LENGTH} caracteres.` }),
+                {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' },
+                },
+            )
+        }
+
+        const cacheKey = text.toLowerCase()
+        const cachedResult = aiCache.get(cacheKey)
+        if (cachedResult) {
+            return new Response(JSON.stringify({ ...cachedResult, cached: true }), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+            })
+        }
+
+        const clientIp = getClientIp(req)
+        const rateLimitMessage = checkRateLimit(clientIp)
+        if (rateLimitMessage) {
+            return new Response(
+                JSON.stringify({ error: rateLimitMessage, rateLimited: true }),
+                {
+                    status: 429,
+                    headers: { 'Content-Type': 'application/json' },
+                },
+            )
         }
 
         const apiKey = process.env.GEMINI_API_KEY
@@ -93,6 +176,7 @@ export default async function handler(req: Request): Promise<Response> {
                 })
 
                 const parsedData = JSON.parse(result.text || '{}')
+                aiCache.set(cacheKey, { ...parsedData, model })
 
                 return new Response(JSON.stringify({ ...parsedData, model }), {
                     status: 200,

@@ -37,10 +37,12 @@ export default function App() {
     try {
       const parsed = await parseAddressWithAi(freeText)
 
-      // Regra R5: Se a IA falhar ou estourar tempo, aviso amigável para preencher manual
-      if (!parsed) {
+      // Regra R5: Se a IA falhar, estourar tempo ou bater no limite de buscas (429), aviso amigável
+      if (!parsed || parsed.errorMessage) {
         setStatus('idle')
-        setInfoMessage('Não foi possível interpretar o texto com IA. Por favor, use os campos abaixo.')
+        setInfoMessage(
+          parsed?.errorMessage || 'Não foi possível interpretar o texto com IA. Por favor, use os campos abaixo.'
+        )
         return
       }
 
@@ -214,6 +216,7 @@ export default function App() {
           <div className="flex gap-2">
             <input
               type="text"
+              maxLength={150}
               value={freeText}
               onChange={e => setFreeText(e.target.value)}
               placeholder="Ex: Av Beira Mar 1200 Fortaleza CE"
