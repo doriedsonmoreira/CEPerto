@@ -19,7 +19,7 @@ const ipHits = globalStore.__cepertoIpHits ?? (globalStore.__cepertoIpHits = new
 const aiCache = globalStore.__cepertoAiCache ?? (globalStore.__cepertoAiCache = new Map<string, Record<string, unknown>>())
 
 function getClientIp(req: Request): string {
-    const forwarded = req.headers.get('x-forwarded-for')
+    const forwarded = req.headers.get('x-vercel-forwarded-for') || req.headers.get('x-forwarded-for')
     if (forwarded) {
         return forwarded.split(',')[0].trim()
     }
@@ -164,6 +164,14 @@ async function handleWebRequest(req: Request): Promise<Response> {
             )
         }
 
+        const formatSafeError = (err: unknown): string => {
+            const status = (err as { status?: number })?.status ?? (err as { code?: number })?.code ?? 'unknown'
+            const rawMsg = err instanceof Error ? err.message : 'Erro inesperado'
+            // Remove qualquer chave acidentalmente presente em URLs ou mensagens de erro
+            const cleanMsg = rawMsg.replace(/AIza[0-9A-Za-z-_]{35}/g, '[REDACTED_KEY]')
+            return `[status=${status}] ${cleanMsg.slice(0, 200)}`
+        }
+
         let lastError: unknown = null
 
         for (const model of models) {
@@ -196,13 +204,13 @@ async function handleWebRequest(req: Request): Promise<Response> {
                 })
             } catch (error) {
                 lastError = error
-                console.warn(`Modelo ${model} falhou, tentando próximo:`, error)
+                console.warn(`Modelo ${model} falhou, tentando próximo:`, formatSafeError(error))
                 if (!isRetriable(error)) break
                 // transitório: continua para o próximo modelo da lista
             }
         }
 
-        console.error('Erro na API parse-address (todos os modelos falharam):', lastError)
+        console.error('Erro na API parse-address (todos os modelos falharam):', formatSafeError(lastError))
         const unavailable = isRetriable(lastError)
         return new Response(
             JSON.stringify({
@@ -216,7 +224,8 @@ async function handleWebRequest(req: Request): Promise<Response> {
             },
         )
     } catch (error) {
-        console.error('Erro na API parse-address:', error)
+        const safeMsg = error instanceof Error ? error.message.slice(0, 200) : 'Erro inesperado'
+        console.error('Erro na API parse-address:', safeMsg)
         return new Response(JSON.stringify({ error: 'Falha ao processar endereço com IA' }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' },
