@@ -313,7 +313,7 @@ export default function App() {
           <button
             type="submit"
             disabled={isAiSearching || status === 'loading' || !freeText.trim()}
-            className="w-full sm:w-[112px] h-[50px] sm:h-[56px] bg-[#0F1F44] hover:bg-[#182e61] text-[#E0BE6E] sm:text-white font-mono font-medium text-[14px] uppercase tracking-wide flex items-center justify-center transition cursor-pointer disabled:opacity-50 shrink-0"
+            className="w-full sm:w-[112px] h-[50px] sm:h-[56px] bg-[#0F1F44] hover:bg-[#182e61] text-white font-mono font-medium text-[14px] uppercase tracking-wide flex items-center justify-center transition cursor-pointer disabled:opacity-50 shrink-0"
           >
             {isAiSearching ? '...' : 'BUSCAR'}
           </button>
