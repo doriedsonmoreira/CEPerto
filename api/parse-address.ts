@@ -36,13 +36,13 @@ function checkRateLimit(ip: string): string | null {
     const hitsLastMinute = hitsLastHour.filter(timestamp => now - timestamp < ONE_MINUTE_MS)
 
     if (hitsLastDay.length >= LIMIT_PER_DAY) {
-        return 'Limite diário de 6 buscas com IA atingido. Utilize os campos manuais abaixo (uso ilimitado)!'
+        return 'Você atingiu o limite diário (6 buscas/dia) da busca com IA. Você pode continuar buscando normalmente pelos campos manuais abaixo ou usando sua localização atual!'
     }
     if (hitsLastHour.length >= LIMIT_PER_HOUR) {
-        return 'Limite de 4 buscas por hora com IA atingido. Utilize os campos manuais abaixo (uso ilimitado)!'
+        return 'Você atingiu o limite por hora (4 buscas/hora) da busca com IA. Você pode buscar pelos campos manuais abaixo ou usando sua localização atual!'
     }
     if (hitsLastMinute.length >= LIMIT_PER_MINUTE) {
-        return 'Limite de 2 buscas por minuto com IA atingido. Aguarde 1 minuto ou use os campos manuais abaixo!'
+        return 'Você atingiu o limite por minuto (2 buscas/minuto) da busca com IA. Aguarde um instante ou busque pelos campos manuais abaixo ou usando sua localização atual!'
     }
 
     hitsLastDay.push(now)
@@ -207,11 +207,11 @@ async function handleWebRequest(req: Request): Promise<Response> {
         return new Response(
             JSON.stringify({
                 error: unavailable
-                    ? 'Serviço de IA temporariamente indisponível'
-                    : 'Falha ao processar endereço com IA',
+                    ? 'O limite de uso da IA foi atingido no momento. Você pode buscar normalmente pelos campos manuais abaixo ou usando sua localização atual!'
+                    : 'Falha ao processar endereço com IA. Utilize os campos manuais abaixo ou sua localização atual.',
             }),
             {
-                status: unavailable ? 503 : 500,
+                status: unavailable ? 429 : 500,
                 headers: { 'Content-Type': 'application/json' },
             },
         )

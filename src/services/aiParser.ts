@@ -25,15 +25,15 @@ export async function parseAddressWithAi(text: string): Promise<ParsedAddress | 
 
         clearTimeout(timeoutId)
 
-        if (response.status === 429) {
+        if (!response.ok) {
             const errData = await response.json().catch(() => ({}))
             return {
                 logradouro: '',
-                errorMessage: errData.error || 'Limite de buscas com IA atingido. Use os campos manuais abaixo!',
+                errorMessage:
+                    errData.error ||
+                    'Você atingiu o limite de buscas com IA (por minuto/hora/dia). Utilize os campos manuais abaixo ou busque pela sua localização atual!',
             }
         }
-
-        if (!response.ok) return null
 
         const data = await response.json()
         if (!data.logradouro) return null
