@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { searchAddress, ViaCepRateLimitError } from './services/viaCep'
 import { reverseGeocode } from './services/geocoding'
 import { parseAddressWithAi } from './services/aiParser'
@@ -24,6 +24,17 @@ export default function App() {
   const [infoMessage, setInfoMessage] = useState<string | null>(null)
   const [results, setResults] = useState<ProcessedCepResult[]>([])
   const [copiedCep, setCopiedCep] = useState<string | null>(null)
+  const [isSplashFading, setIsSplashFading] = useState(false)
+  const [showSplash, setShowSplash] = useState(true)
+
+  useEffect(() => {
+    const fadeTimer = setTimeout(() => setIsSplashFading(true), 800)
+    const removeTimer = setTimeout(() => setShowSplash(false), 1200)
+    return () => {
+      clearTimeout(fadeTimer)
+      clearTimeout(removeTimer)
+    }
+  }, [])
 
   // Fluxo 5.1: Busca por Texto Livre com Inteligência Artificial
   async function handleAiSearch(e: React.FormEvent) {
@@ -210,6 +221,25 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F1F3F6] text-[#0F1F44] font-sans">
+      {/* Splash Screen Inicial */}
+      {showSplash && (
+        <div
+          aria-hidden="true"
+          className={`fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#F1F3F6] transition-opacity duration-400 ease-out ${
+            isSplashFading ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
+        >
+          <img
+            src="/favicon.svg"
+            alt="CEPerto"
+            className="w-24 h-24 sm:w-28 sm:h-28 drop-shadow-sm animate-pulse"
+          />
+          <span className="mt-3 font-display font-semibold text-[24px] text-[#0F1F44] tracking-tight">
+            CEPerto
+          </span>
+        </div>
+      )}
+
       {/* Faixa do mapa */}
       <div
         className="relative w-full h-[140px] sm:h-[220px] border-b border-[#0F1F44] overflow-hidden bg-[#B5C4DD]"
